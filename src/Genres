@@ -1,0 +1,101 @@
+package BigDataHW1_2;
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Reducer.Context;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+
+
+public class BigDataHW1_2 {
+	public static class Map extends Mapper<LongWritable, Text, Text,IntWritable> {
+	    private final static IntWritable one = new IntWritable(1);
+	    private Text name = new Text();
+	    private Text genre = new Text();
+	  String inputParam = "";     
+
+
+	    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+	        String line = value.toString();
+	        StringTokenizer tokenizer = new StringTokenizer(line,"::");
+	        String temp = null;
+	      	        
+	        while (tokenizer.hasMoreTokens()) {	   
+	        	temp= tokenizer.nextToken();		        			        					        	
+			        
+			            if(tokenizer.countTokens() == 0 )
+			         {
+			            	StringTokenizer token = new StringTokenizer(temp.toString(),"|");
+			            	String gtemp = null;
+			            	while(token.hasMoreElements())
+			            	{
+			            		gtemp=token.nextToken();			            	
+			            				genre.set(gtemp);	
+			            				context.write(genre,one);	
+			            			
+			            	}
+			            					            
+			       	}
+			                     	
+	          
+	        }
+	    }
+	 } 
+	        
+	 public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+		 
+	    public void reduce(Text key, Iterable<IntWritable> values, Context context) 
+	      throws IOException, InterruptedException {
+	   	 Configuration conf = context.getConfiguration();  
+         
+	        int sum = 0;
+	       
+	        for (IntWritable k: values)
+	        {
+	        	sum+=k.get();
+		        	 
+	        }
+	        context.write(key, new IntWritable(sum));
+	        	
+	        
+	        
+	    }
+	 }
+	        
+	 public static void main(String[] args) throws Exception {
+		 
+	    Configuration conf = new Configuration();  
+	   
+	    
+	    Job job = new Job(conf, "BigDataHW1_2");
+	    
+	    job.setOutputKeyClass(Text.class);
+	    job.setOutputValueClass(IntWritable.class);
+	    job.setJarByClass(BigDataHW1_2.class);
+	    job.setMapperClass(Map.class);
+	    job.setCombinerClass(Reduce.class);
+	    job.setReducerClass(Reduce.class);
+	    
+	        
+	    job.setInputFormatClass(TextInputFormat.class);
+	    job.setOutputFormatClass(TextOutputFormat.class);
+	        
+	    FileInputFormat.addInputPath(job, new Path(args[0]));
+	    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+	        
+	    job.waitForCompletion(true);
+	 }
+
+}
