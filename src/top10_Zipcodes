@@ -1,0 +1,129 @@
+package BigDataHW1_3;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+        
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+public class BigDataHW1_3 {
+	
+        
+		 public static class Map extends Mapper<LongWritable, Text, Text, NullWritable> {
+		    private final static IntWritable one = new IntWritable(1);
+		   
+		  String inputParam = "";   
+		  String[] arinput=null;
+		 
+
+		    protected void setup(Context context) throws IOException, InterruptedException
+		    { 
+
+		        Configuration conf = context.getConfiguration();  
+		        
+
+		         inputParam = conf.get("parameter");   
+		         arinput = inputParam.split(":");
+		        
+
+		    }
+
+
+
+		    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+		        String line = value.toString();
+		        
+		        String[] minput = line.split("::");
+		        String genreParts = minput[2].toString();
+		       
+		        String[] argenre = genreParts.split("\\|");
+		     
+		        
+		       
+		       int count=0;
+		       int x =0;
+		        for(int i=0;i<argenre.length;i++)
+		        {
+		        	
+		        	for(int j=0;j<arinput.length;j++)
+		        	{
+		        		
+		        		if(argenre[i].equalsIgnoreCase(arinput[j]))
+		        		{
+		        			
+		        			count++;
+		        		}
+		        		
+		        	}
+		         x =arinput.length;
+			        
+		        }
+		        
+		        
+		        if(count == x)
+		        {
+		        	
+		        	context.write(new Text(minput[1]), NullWritable.get());
+		        }
+            	
+            	
+            	ArrayList<Integer> a=new ArrayList<Integer>();
+            	
+                //a.get(4);
+		       
+		          
+		        }
+		    }
+		 
+		        
+		 public static class Reduce extends Reducer<Text, NullWritable, Text, NullWritable> {
+									  
+
+		    public void reduce(Text key, Iterable<NullWritable> values, Context context) 
+		      throws IOException, InterruptedException {
+		   	 
+	     
+		        context.write(key, NullWritable.get());
+		        
+		      	        
+		        
+		    }
+		 }
+		        
+		 public static void main(String[] args) throws Exception {
+			 
+		    Configuration conf = new Configuration();  
+		  		     
+		     conf.set("parameter", args[2]);
+
+
+		    Job job = new Job(conf, "BigDataHW1_3");
+		    
+		    job.setOutputKeyClass(Text.class);
+		    job.setOutputValueClass(NullWritable.class);
+		    job.setJarByClass(BigDataHW1_3.class);
+		    job.setMapperClass(Map.class);
+		    job.setCombinerClass(Reduce.class);
+		    job.setReducerClass(Reduce.class);
+		    
+		        
+		    job.setInputFormatClass(TextInputFormat.class);
+		    job.setOutputFormatClass(TextOutputFormat.class);
+		        
+		    FileInputFormat.addInputPath(job, new Path(args[0]));
+		    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		        
+		    job.waitForCompletion(true);
+		 }
+		        
+		}
+	
+
+
